@@ -2,7 +2,7 @@
 
   ArcPy で書かれた ArcGIS Pro 用の複数の便利なツールが含まれている「サンプル ジオプロセシングツールボックス」です。
   ArcGIS Pro へツールボックスを追加することで、各種ジオプロセシング ツールとして利用が可能です。
-  ツールボックスの追加方法は以下のヘルプ ページをご覧ください。また、コンパイル済みのものは[こちら](https://github.com/EsriJapan/ejpyconv-py/wiki/EJPyConv_setup_wiki)にあります。
+  ツールボックスの追加方法は以下のヘルプ ページをご覧ください。また、コンパイル済みのものは[こちら](https://github.com/EsriJapan/ejpyconv-py/releases)にあります。
 
 ツールボックスへの接続  
 https://pro.arcgis.com/ja/pro-app/help/projects/connect-to-a-toolbox.htm
