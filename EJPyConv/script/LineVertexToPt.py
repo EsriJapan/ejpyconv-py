@@ -14,7 +14,6 @@ class AlreadyExistError(Exception):
 import arcpy
 import sys
 import os
-from itertools import groupby
 
 
 # フィーチャクラスの作成と属性情報コピーの準備

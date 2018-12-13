@@ -10,11 +10,9 @@ Updated   :
 class AlreadyExistError(Exception):
     pass
 
-
 import arcpy
 import sys
 import os
-from itertools import groupby
 
 
 def setup_create_convexhull():
