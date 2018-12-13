@@ -2,16 +2,13 @@
 
   ArcPy で書かれた ArcGIS Pro 用の複数の便利なツールが含まれている「サンプル ジオプロセシングツールボックス」です。
   ArcGIS Pro へツールボックスを追加することで、各種ジオプロセシング ツールとして利用が可能です。
-  ツールボックスの追加方法は以下のヘルプ ページをご覧ください。また、コンパイル済みのものは[こちら](https://github.com/EsriJapan/ejpyconv-py/releases)にあります。
-
-ツールボックスへの接続  
-https://pro.arcgis.com/ja/pro-app/help/projects/connect-to-a-toolbox.htm
+  
 
 ## ジオプロセシング ツールボックスの内容
 
   各種ジオプロセシング ツール として、次のものが含まれています（2018/12/xx 現在）。
   
-  [ジオメトリ操作 - ツール ボックス]
+  [ジオメトリ操作 - ツール セット]
   * ポイントをポリゴンへ変換（PtToPoly）
   * ポリゴンの重心点をポイントへ変換（PolyCenterToPt）
   * ポリゴンの頂点をポイントへ変換（PolyVertexToPt）
@@ -28,9 +25,9 @@ https://pro.arcgis.com/ja/pro-app/help/projects/connect-to-a-toolbox.htm
   ジオプロセシング ツールの動作確認を行った環境は、次の通りです。
   * [ArcGIS Pro 2.2](https://www.esrij.com/products/arcgis-desktop/environments/arcgis-pro/)
 
-## ArcGIS Pro への適用方法
+## ArcGIS Pro への設定方法
 
-使い方は [EJPyConv_setup_wiki](https://github.com/EsriJapan/ejpyconv-py/wiki/EJPyConv_setup_wiki) をご覧ください。
+ [EJPyConv_setup_wiki](https://github.com/EsriJapan/ejpyconv-py/wiki/EJPyConv_setup_wiki) をご覧ください。
 
 ## 免責事項
   
