@@ -138,7 +138,7 @@ def linevertex_point():
             else:
                 newValue = list(inrow)
 
-            # パーtの数
+            # パートの数
             for part in inrow[-1]:
                 # 頂点座標の数
                 for pnt in part:
