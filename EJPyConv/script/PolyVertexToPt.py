@@ -4,7 +4,7 @@ Tool name : ポリゴンの頂点をポイントへ変換
 Source    : PolyVertexToPt.py
 Author    : Esri Japan Corporation
 Created   : 2018/12/14
-Updated   :
+Updated   : 2019/2/14
 """
 
 class AlreadyExistError(Exception):
@@ -94,6 +94,7 @@ def polyvertex_point():
 
         in_poly_fc = arcpy.GetParameterAsText(0)
         out_pt_fc = arcpy.GetParameterAsText(1)
+        overlap = arcpy.GetParameter(2)
 
         # ワークスペース
         wstype = arcpy.Describe(os.path.dirname(out_pt_fc)).workspacetype
@@ -139,9 +140,28 @@ def polyvertex_point():
             else:
                 newValue = list(inrow)
 
-
             # パートの数
             for part in inrow[-1]:
+
+                dflg = 0
+                innercnt = 0
+
+                # ドーナツ型のポリゴンかチェック
+                for pnt in part:
+                    if pnt:
+                        innercnt = innercnt + 1
+                    else:
+                        dflg = 1
+                        break
+
+                if overlap == True:
+                    # ドーナツなら削る処理
+                    if dflg == 1:
+                        # part から innercnt の 1つ前の要素数の場所を削除
+                        part.remove(innercnt-1)
+
+                    # 最後のポイントを削除
+                    part.remove(len(part)-1)
 
                 # 頂点座標の数
                 for pnt in part:
