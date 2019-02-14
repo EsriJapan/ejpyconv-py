@@ -1,10 +1,10 @@
 ﻿# coding:utf-8
 """
-Tool name : ポリゴンの頂点をポイントへ変換
-Source    : PolyVertexToPt.py
+Tool name : ポリゴンの重心点をポイントへ変換
+Source    : PolyCenterToPt.py
 Author    : Esri Japan Corporation
 Created   : 2018/12/14
-Updated   : 2019/2/14
+Updated   :
 """
 
 class AlreadyExistError(Exception):
@@ -20,9 +20,9 @@ import os
 def create_fieldinfo(in_poly_fc, out_pt_fc):
     """
     メソッド名 : create_fieldinfo メソッド
-    引数 1     : 入力フィーチャ
-    引数 2     : 出力フィーチャクラス
-    概要       : カーソル作成に用いるフィールド情報を作成
+    引数 1     : 入力ポリゴン
+    引数 2     : 出力ポイント
+    概要       : カーソル作成に用いるフィールド情報の作成
     """
     # 出力パスの取得
     out_ws = os.path.dirname(out_pt_fc)
@@ -83,44 +83,39 @@ def create_fieldinfo(in_poly_fc, out_pt_fc):
 
     return search_fields_name, search_fields_type, use_fields_name, spref
 
-def polyvertex_point():
+def polygon_point():
     """
-    メソッド名 : polyvertex_point メソッド
-    概要       : ポリゴンの頂点からポイントへ変換
+    メソッド名：polygon_point メソッド
+    概要      ：ポリゴンの重心点からポイントに変換
     """
-
     try:
         arcpy.AddMessage(u"処理開始：")
 
         in_poly_fc = arcpy.GetParameterAsText(0)
         out_pt_fc = arcpy.GetParameterAsText(1)
-        overlap = arcpy.GetParameter(2)
+        label_point_flg = arcpy.GetParameter(2)
 
-        # ワークスペース
         wstype = arcpy.Describe(os.path.dirname(out_pt_fc)).workspacetype
 
-        # ワークスペースにすでに同一のフィーチャクラス名がないかチェック
+        # ポリゴンをテンプレートにしてポイントフィーチャクラスを作成し
+        # 出力ポイントフィーチャクラスから抽出するフィールドのリストを作成
         if arcpy.Exists(out_pt_fc):
             raise AlreadyExistError
 
         # カーソル作成に使用するフィールド情報を create_fieldinfo 関数を用いて取得
         search_fields_name, search_fields_type, use_fields_name, spref = create_fieldinfo(in_poly_fc, out_pt_fc)
 
-        # フィーチャクラスの検索カーソル作成
         incur = arcpy.da.SearchCursor(in_poly_fc, search_fields_name)
-        # フィーチャクラスの挿入カーソル作成
         outcur = arcpy.da.InsertCursor(out_pt_fc, use_fields_name)
 
         i = 0
         num = int(arcpy.GetCount_management(in_poly_fc).getOutput(0))
 
-        # フィーチャ(ジオメトリ)の数
         for inrow in incur:
             i = i + 1
             if (i == 1) or (i == num) or (i % 1000 == 1):
                 s = u"{0}/{1}の処理中・・・".format(i, num)
                 arcpy.AddMessage(s)
-
 
             newValue = []
             # 出力がShape ファイルの場合、NULL 値を格納できないため
@@ -140,36 +135,15 @@ def polyvertex_point():
             else:
                 newValue = list(inrow)
 
-            # パートの数
-            for part in inrow[-1]:
-
-                dflg = 0
-                innercnt = 0
-
-                # ドーナツ型のポリゴンかチェック
-                for pnt in part:
-                    if pnt:
-                        innercnt = innercnt + 1
-                    else:
-                        dflg = 1
-                        break
-
-                if overlap == True:
-                    # ドーナツなら削る処理
-                    if dflg == 1:
-                        # part から innercnt の 1つ前の要素数の場所を削除
-                        part.remove(innercnt-1)
-
-                    # 最後のポイントを削除
-                    part.remove(len(part)-1)
-
-                # 頂点座標の数
-                for pnt in part:
-                    if pnt:
-                        # ジオメトリにポリゴンのcentroidポイントを格納
-                        newValue[-1] = arcpy.PointGeometry(arcpy.Point(pnt.X, pnt.Y), spref)
-                        # リストからタプルに変換してインサート
-                        outcur.insertRow(tuple(newValue))
+            # オプションによって処理を分岐
+            if (label_point_flg == True):
+                # ジオメトリにポリゴンのcentroidポイントを格納
+                newValue[-1] = arcpy.PointGeometry(inrow[-1].centroid, spref)
+            else:
+                # ジオメトリにポリゴンのlabelPointポイントを格納
+                newValue[-1] = arcpy.PointGeometry(inrow[-1].labelPoint, spref)
+            # リストからタプルに変換してインサート
+            outcur.insertRow(tuple(newValue))
         # 後始末
         del outcur
         del incur
@@ -184,4 +158,5 @@ def polyvertex_point():
 
 
 if __name__ == "__main__":
-    polyvertex_point()
+    polygon_point()
+
