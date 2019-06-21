@@ -6,24 +6,28 @@
 
 ## ジオプロセシング ツールボックスの内容
 
-  各種ジオプロセシング ツール として、次のものが含まれています（2018/12/13 現在）。
+  各種ジオプロセシング ツール として、次のものが含まれています（2019/6/21 現在）。
   
   [ジオメトリ操作 - ツール セット]
   * ポイントをポリゴンへ変換（PtToPoly）
   * ポリゴンの重心点をポイントへ変換（PolyCenterToPt）
   * ポリゴンの頂点をポイントへ変換（PolyVertexToPt）
+  * ポリゴンをラインで切断 (CutPolyWithLine)
   * ポリゴンをラインへ変換（PolyToLine）
+  * ポリゴンを穴埋め (PolyFillingUp)
+  * ポリゴン同士重なる領域を削除 (DelOverlapPoly)
   * ラインの始終点をポイントへ変換（LineStartingAndEndingPtToPt）
   * ラインの共有点をポイントへ変換（LineJunctionPtToPt）
   * ラインの中間点をポイントへ変換（LineMidPtToPt）
   * ラインの頂点をポイントへ変換（LineVertexToPt）
+  * ラインをポイントで分断 (SplitLineAtPt)
   * 凸包の作成（CreateConvexhull）
   * 内向きバッファーの作成（CreateInsideBuffer）
 
 ## 動作確認環境
 
   ジオプロセシング ツールの動作確認を行った環境は、次の通りです。
-  * [ArcGIS Pro 2.2](https://www.esrij.com/products/arcgis-desktop/environments/arcgis-pro/)
+  * [ArcGIS Pro 2.3](https://www.esrij.com/products/arcgis-desktop/environments/arcgis-pro/)
 
 ## ArcGIS Pro への設定方法
 
@@ -39,7 +43,7 @@ ESRIジャパン GitHub アカウントにおけるオープンソースへの�
 
 
 ## ライセンス
-Copyright 2018 Esri Japan Corporation.
+Copyright 2019 Esri Japan Corporation.
 
 Apache License Version 2.0（「本ライセンス」）に基づいてライセンスされます。あなたがこのファイルを使用するためには、本ライセンスに従わなければなりません。
 本ライセンスのコピーは下記の場所から入手できます。

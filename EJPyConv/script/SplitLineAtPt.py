@@ -1,9 +1,9 @@
 ﻿# coding:utf-8
 """
-Tool name : ラインの頂点をポイントへ変換
-Source    : LineVertexToPt.py
+Tool name : ポイントでラインを分断
+Source    : SplitLineAtPt.py
 Author    : Esri Japan Corporation
-Created   : 2018/12/14
+Created   : 2019/6/21
 Updated   :
 """
 
@@ -37,7 +37,7 @@ def create_fieldinfo(in_line_fc, out_pt_fc):
     spref = in_desc.spatialReference
 
     # フィーチャクラスの作成
-    arcpy.CreateFeatureclass_management(out_ws, out_fc_name, "POINT", in_line_fc, "", "", spref)
+    arcpy.CreateFeatureclass_management(out_ws, out_fc_name, "POLYLINE", in_line_fc, "", "", spref)
 
     # 変数定義
     search_fields_name = []
@@ -84,16 +84,64 @@ def create_fieldinfo(in_line_fc, out_pt_fc):
     return search_fields_name, search_fields_type, use_fields_name, spref
 
 
-def linevertex_point():
+def cut_line(line, point):
     """
-    メソッド名 : linevertex_point メソッド
-    概要       : ラインの頂点からポイントへ変換
+    メソッド名 : cut_line メソッド
+    概要　 　　: ポイントでラインを分断
+    """
+    
+    cutline1, cutline2 = line.cut(arcpy.Polyline(arcpy.Array(
+        [arcpy.Point(point.centroid.X + 10.0, point.centroid.Y + 10.0),
+         arcpy.Point(point.centroid.X - 10.0, point.centroid.Y - 10.0)])))
+
+    return cutline1, cutline2
+
+
+def recut_line(cutlines, overlap_pt, end):
+    """
+    メソッド名 : recut_line メソッド
+    概要　 　　: ポイントでラインを分断(再帰処理)
+    """
+    # ラインの数ループ
+    for line in cutlines:
+        # ポイントの数ループ
+        for point in overlap_pt:
+            # ポイントが重なっているかチェック
+            if line.contains(point):
+                # 重なっていたらカット
+                cutline1, cutline2 = cut_line(line, point)
+                # カットしたラインを配列に格納
+                cutlineArray = []
+                cutlineArray.insert(0, cutline1)
+                cutlineArray.insert(0, cutline2)
+                # カットしたラインにさらに重なるポイントがあるか再帰処理
+                recut_line(cutlineArray, overlap_pt, end)
+
+            # ラインにポイントが重なっていなかったら他のポイントと重なっているかチェック
+            else:
+                flg = False
+                for point2 in overlap_pt:
+                    if line.contains(point2):
+                        flg = True
+
+                # 他のポイントとも重なっていなかったら最終系のラインの配列に入れる
+                if flg == False:
+                    end.insert(0, line)
+
+    return end
+
+
+def split_line_pt():
+    """
+    メソッド名 : SplitLineAtPoint メソッド
+    概要       : ポイントでラインを分断
     """
     try:
         arcpy.AddMessage(u"処理開始：")
 
         in_line_fc = arcpy.GetParameterAsText(0)
-        out_pt_fc = arcpy.GetParameterAsText(1)
+        in_point_fc = arcpy.GetParameterAsText(1)
+        out_pt_fc = arcpy.GetParameterAsText(2)
 
         # ワークスペース
         wstype = arcpy.Describe(os.path.dirname(out_pt_fc)).workspacetype
@@ -110,15 +158,7 @@ def linevertex_point():
         # フィーチャクラスの挿入カーソル作成
         outcur = arcpy.da.InsertCursor(out_pt_fc, use_fields_name)
 
-        i = 0
-        num = int(arcpy.GetCount_management(in_line_fc).getOutput(0))
-
-        # フィーチャ(ジオメトリ)の数
         for inrow in incur:
-            i = i + 1
-            if (i == 1) or (i == num) or (i % 1000 == 1):
-                s = u"{0}/{1}の処理中・・・".format(i, num)
-                arcpy.AddMessage(s)
 
             newValue = []
             # 出力がShape ファイルの場合、NULL 値を格納できないため
@@ -138,14 +178,45 @@ def linevertex_point():
             else:
                 newValue = list(inrow)
 
-            # パートの数
-            for part in inrow[-1]:
-                # 頂点座標の数
-                for pnt in part:
-                    # ジオメトリにラインの頂点のポイントを格納
-                    newValue[-1] = arcpy.PointGeometry(arcpy.Point(pnt.X, pnt.Y), spref)
-                    # リストからタプルに変換してインサート
-                    outcur.insertRow(tuple(newValue))
+            cutlines = []
+            cutlines.insert(0, newValue[-1])
+
+            # 入力ポイントのリストを作成
+            points = [row[0] for row in arcpy.da.SearchCursor(in_point_fc, "SHAPE@")]
+
+            # ラインと重なっているポイントのみを配列に入れる
+            overlap_pt = []
+            for pt in points:
+                if newValue[-1].contains(pt):
+                    overlap_pt.append(pt)
+
+            # ラインと重なっているポイントが0個の場合
+            if len(overlap_pt) == 0:
+                # 入力ラインをそのまま出力
+                outcur.insertRow(newValue)
+            # ラインと重なっているポイントが1個の場合 cut_line メソッドへ
+            elif len(overlap_pt) == 1:
+                cutline1, cutline2 = cut_line(newValue[-1], overlap_pt[0])
+                newValue[-1] = cutline1
+                outcur.insertRow(newValue)
+                newValue[-1] = cutline2
+                outcur.insertRow(newValue)
+
+            # ラインと重なっているポイントが2個以上の場合、再帰処理の recut_line メソッドへ
+            else:
+                end = []
+                # ラインに対して再帰的にポイントでカットする
+                end = recut_line(cutlines, overlap_pt, end)
+                # 最終系のラインの配列から重複しているラインを削除
+                unique_end = []
+                for overlap_line in end:
+                    if overlap_line not in unique_end:
+                        unique_end.append(overlap_line)
+                # 最終系のラインの配列分繰り返して newValue に値を入れる
+                for out_line in unique_end:
+                    newValue[-1] = out_line
+                    outcur.insertRow(newValue)
+
         # 後始末
         del outcur
         del incur
@@ -160,4 +231,4 @@ def linevertex_point():
 
 
 if __name__ == "__main__":
-    linevertex_point()
+    split_line_pt()
