@@ -6,23 +6,23 @@
 
 ## ジオプロセシング ツールボックスの内容
 
-  各種ジオプロセシング ツール として、次のものが含まれています（2019/6/21 現在）。
+  各種ジオプロセシング ツール として、次のものが含まれています (2019/6/21 現在)。
   
   [ジオメトリ操作 - ツール セット]
-  * ポイントをポリゴンへ変換（PtToPoly）
-  * ポリゴンの重心点をポイントへ変換（PolyCenterToPt）
-  * ポリゴンの頂点をポイントへ変換（PolyVertexToPt）
+  * ポイントをポリゴンへ変換 (PtToPoly)
+  * ポリゴンの重心点をポイントへ変換 (PolyCenterToPt)
+  * ポリゴンの頂点をポイントへ変換 (PolyVertexToPt)
   * ポリゴンをラインで切断 (CutPolyWithLine)
-  * ポリゴンをラインへ変換（PolyToLine）
+  * ポリゴンをラインへ変換 (PolyToLine)
   * ポリゴンを穴埋め (PolyFillingUp)
   * ポリゴン同士重なる領域を削除 (DelOverlapPoly)
-  * ラインの始終点をポイントへ変換（LineStartingAndEndingPtToPt）
-  * ラインの共有点をポイントへ変換（LineJunctionPtToPt）
-  * ラインの中間点をポイントへ変換（LineMidPtToPt）
-  * ラインの頂点をポイントへ変換（LineVertexToPt）
+  * ラインの始終点をポイントへ変換 (LineStartingAndEndingPtToPt)
+  * ラインの共有点をポイントへ変換 (LineJunctionPtToPt)
+  * ラインの中間点をポイントへ変換 (LineMidPtToPt)
+  * ラインの頂点をポイントへ変換 (LineVertexToPt)
   * ラインをポイントで分断 (SplitLineAtPt)
-  * 凸包の作成（CreateConvexhull）
-  * 内向きバッファーの作成（CreateInsideBuffer）
+  * 凸包の作成 (CreateConvexhull)
+  * 内向きバッファーの作成 (CreateInsideBuffer)
 
 ## 動作確認環境
 
