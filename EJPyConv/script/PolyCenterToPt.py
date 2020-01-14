@@ -136,7 +136,7 @@ def polygon_point():
                 newValue = list(inrow)
 
             # オプションによって処理を分岐
-            if (label_point_flg == True):
+            if (label_point_flg == False):
                 # ジオメトリにポリゴンのcentroidポイントを格納
                 newValue[-1] = arcpy.PointGeometry(inrow[-1].centroid, spref)
             else:
