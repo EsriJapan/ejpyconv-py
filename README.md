@@ -23,8 +23,8 @@
   * ラインをポイントで分断 (SplitLineAtPt)
   * 凸包の作成 (CreateConvexhull)
   * 内向きバッファーの作成 (CreateInsideBuffer)
-  * スパイダーグラフの作成 (SpiderGraph)
-  * ティーセンポリゴンの作成 (Thiessen)
+  * スパイダー グラフの作成 (SpiderGraph)
+  * ティーセン ポリゴンの作成 (Thiessen)
   * 面積を按分 (ProportionalDivisionArea)
 
 ## 動作確認環境
