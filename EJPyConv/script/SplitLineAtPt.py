@@ -4,7 +4,7 @@ Tool name : ポイントでラインを分断
 Source    : SplitLineAtPt.py
 Author    : Esri Japan Corporation
 Created   : 2019/6/21
-Updated   :
+Updated   : 2020/4/27
 """
 
 class AlreadyExistError(Exception):
@@ -14,7 +14,7 @@ class AlreadyExistError(Exception):
 import arcpy
 import sys
 import os
-
+sys.setrecursionlimit(10000)
 
 # フィーチャクラスの作成と属性情報コピーの準備
 def create_fieldinfo(in_line_fc, out_pt_fc):
@@ -89,15 +89,15 @@ def cut_line(line, point):
     メソッド名 : cut_line メソッド
     概要　 　　: ポイントでラインを分断
     """
-    
+
     cutline1, cutline2 = line.cut(arcpy.Polyline(arcpy.Array(
-        [arcpy.Point(point.centroid.X + 10.0, point.centroid.Y + 10.0),
-         arcpy.Point(point.centroid.X - 10.0, point.centroid.Y - 10.0)])))
+        [arcpy.Point(point.centroid.X + 0.01, point.centroid.Y + 0.01),
+         arcpy.Point(point.centroid.X - 0.01, point.centroid.Y - 0.01)])))
 
     return cutline1, cutline2
 
 
-def recut_line(cutlines, overlap_pt, end):
+def recut_line(cutlines, overlap_pt, end, error_list):
     """
     メソッド名 : recut_line メソッド
     概要　 　　: ポイントでラインを分断(再帰処理)
@@ -107,28 +107,38 @@ def recut_line(cutlines, overlap_pt, end):
         # ポイントの数ループ
         for point in overlap_pt:
             # ポイントが重なっているかチェック
-            if line.contains(point):
-                # 重なっていたらカット
-                cutline1, cutline2 = cut_line(line, point)
+            if line.contains(point[0][0]):
+                cutline1, cutline2 = cut_line(line, point[0][0])
                 # カットしたラインを配列に格納
                 cutlineArray = []
-                cutlineArray.insert(0, cutline1)
                 cutlineArray.insert(0, cutline2)
+                cutlineArray.insert(0, cutline1)
+                
+                # カットに使用したポイントは削除
+                overlap_pt.remove(point)
+                
+                # ポイントがなくなったら最後に切れたラインを最終系の配列に入れる
+                if len(overlap_pt) == 0:
+                    end.insert(-1, cutline2)
+                    end.insert(-1, cutline1)
+                # カットできなかったらポイントのOIDを格納
+                if cutline1.length == 0 or cutline2.length == 0:
+                     error_list.append(point[-1])
                 # カットしたラインにさらに重なるポイントがあるか再帰処理
-                recut_line(cutlineArray, overlap_pt, end)
+                recut_line(cutlineArray, overlap_pt, end, error_list)
 
             # ラインにポイントが重なっていなかったら他のポイントと重なっているかチェック
             else:
                 flg = False
                 for point2 in overlap_pt:
-                    if line.contains(point2):
+                    if line.contains(point2[0][0]):
                         flg = True
 
                 # 他のポイントとも重なっていなかったら最終系のラインの配列に入れる
-                if flg == False:
-                    end.insert(0, line)
+                if flg == False and line.length != 0:
+                    end.insert(-1, line)       
 
-    return end
+    return end, error_list
 
 
 def split_line_pt():
@@ -142,6 +152,7 @@ def split_line_pt():
         in_line_fc = arcpy.GetParameterAsText(0)
         in_point_fc = arcpy.GetParameterAsText(1)
         out_pt_fc = arcpy.GetParameterAsText(2)
+
 
         # ワークスペース
         wstype = arcpy.Describe(os.path.dirname(out_pt_fc)).workspacetype
@@ -182,34 +193,44 @@ def split_line_pt():
             cutlines.insert(0, newValue[-1])
 
             # 入力ポイントのリストを作成
-            points = [row[0] for row in arcpy.da.SearchCursor(in_point_fc, "SHAPE@")]
+            points = [row for row in arcpy.da.SearchCursor(in_point_fc, ["SHAPE@", "OID@"])]
 
             # ラインと重なっているポイントのみを配列に入れる
             overlap_pt = []
             for pt in points:
-                if newValue[-1].contains(pt):
-                    overlap_pt.append(pt)
+                if newValue[-1].contains(pt[0]):
+                    a = newValue[-1].queryPointAndDistance(pt[0])
+                    overlap_pt.append([a, pt[-1]])
+            # ラインの始点から近い順に並べかえ
+            overlap_pt.sort(key = lambda x: x[0][1])
 
+            # cutできなかったポイントのOID格納用リスト
+            error_list = []
             # ラインと重なっているポイントが0個の場合
             if len(overlap_pt) == 0:
                 # 入力ラインをそのまま出力
                 outcur.insertRow(newValue)
             # ラインと重なっているポイントが1個の場合 cut_line メソッドへ
             elif len(overlap_pt) == 1:
-                cutline1, cutline2 = cut_line(newValue[-1], overlap_pt[0])
-                newValue[-1] = cutline1
-                outcur.insertRow(newValue)
-                newValue[-1] = cutline2
-                outcur.insertRow(newValue)
+                cutline1, cutline2 = cut_line(newValue[-1], overlap_pt[0][0][0])
+                
+                # カットできなかったらポイントのOIDを格納
+                if cutline1.length == 0 or cutline2.length == 0:
+                     error_list.append(overlap_pt[0][-1]) 
+                else:
+                    newValue[-1] = cutline1
+                    outcur.insertRow(newValue)
+                    newValue[-1] = cutline2
+                    outcur.insertRow(newValue)
 
             # ラインと重なっているポイントが2個以上の場合、再帰処理の recut_line メソッドへ
             else:
                 end = []
                 # ラインに対して再帰的にポイントでカットする
-                end = recut_line(cutlines, overlap_pt, end)
+                end = recut_line(cutlines, overlap_pt, end, error_list)
                 # 最終系のラインの配列から重複しているラインを削除
                 unique_end = []
-                for overlap_line in end:
+                for overlap_line in end[0]:
                     if overlap_line not in unique_end:
                         unique_end.append(overlap_line)
                 # 最終系のラインの配列分繰り返して newValue に値を入れる
@@ -220,6 +241,11 @@ def split_line_pt():
         # 後始末
         del outcur
         del incur
+
+        if len(error_list) != 0:
+            for error in error_list:
+                arcpy.AddMessage(u"入力ポイント:{0}の OBJECTID:{1} のポイントでの分断に失敗しました。"
+                                 u"手動で分断してください。".format(os.path.basename(in_point_fc), error))
 
         arcpy.AddMessage(u"処理終了：")
     except AlreadyExistError:
