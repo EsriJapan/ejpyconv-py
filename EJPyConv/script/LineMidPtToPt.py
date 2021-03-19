@@ -4,7 +4,7 @@ Tool name : ラインの中間点をポイントへ変換
 Source    : LineMidPtToPt.py
 Author    : Esri Japan Corporation
 Created   : 2018/12/14
-Updated   :
+Updated   : 2021/03/19
 """
 
 class AlreadyExistError(Exception):
@@ -105,51 +105,61 @@ def linemiddlepoint_point():
         # カーソル作成に使用するフィールド情報を create_fieldinfo 関数を用いて取得
         search_fields_name, search_fields_type, use_fields_name, spref = create_fieldinfo(in_line_fc, out_pt_fc)
 
+        # 2021.03.19: 追記 - 座標系をインプットから取得
+        #Polyline 作成時の引数に、座標系を指定していないと、ジオメトリが空になり、multiLine.positionAlongLine で例外が発生する場合がある
+        spref = arcpy.Describe(in_line_fc).spatialReference
+        
+        # 2021.03.19: 変更 - 例外発生時にロックが残ってしまうので、with に変更
         # フィーチャクラスの検索カーソル作成
-        incur = arcpy.da.SearchCursor(in_line_fc, search_fields_name)
+        #incur = arcpy.da.SearchCursor(in_line_fc, search_fields_name)
         # フィーチャクラスの挿入カーソル作成
-        outcur = arcpy.da.InsertCursor(out_pt_fc, use_fields_name)
+        #outcur = arcpy.da.InsertCursor(out_pt_fc, use_fields_name)
+        with arcpy.da.SearchCursor(in_line_fc, search_fields_name) as incur:
+            
+            with arcpy.da.InsertCursor(out_pt_fc, use_fields_name) as outcur:
+                
+                i = 0
+                num = int(arcpy.GetCount_management(in_line_fc).getOutput(0))
 
-        i = 0
-        num = int(arcpy.GetCount_management(in_line_fc).getOutput(0))
+                # フィーチャ(ジオメトリ)の数
+                for inrow in incur:
+                    i = i + 1
+                    if (i == 1) or (i == num) or (i % 1000 == 1):
+                        s = u"{0}/{1}の処理中・・・".format(i, num)
+                        arcpy.AddMessage(s)
 
-        # フィーチャ(ジオメトリ)の数
-        for inrow in incur:
-            i = i + 1
-            if (i == 1) or (i == num) or (i % 1000 == 1):
-                s = u"{0}/{1}の処理中・・・".format(i, num)
-                arcpy.AddMessage(s)
-
-            newValue = []
-            # 出力がShape ファイルの場合、NULL 値を格納できないため
-            # フィールドのタイプに合わせて、空白や 0 を格納する
-            if wstype == "FileSystem":
-                for j, value in enumerate(inrow):
-                    if value == None:
-                        if search_fields_type[j] == "String":
-                            newValue.append("")
-                        elif search_fields_type[j] in ["Double", "Integer", "Single", "SmallInteger"]:
-                            newValue.append(0)
-                        else:
-                            newValue.append(value)
+                    newValue = []
+                    # 出力がShape ファイルの場合、NULL 値を格納できないため
+                    # フィールドのタイプに合わせて、空白や 0 を格納する
+                    if wstype == "FileSystem":
+                        for j, value in enumerate(inrow):
+                            if value == None:
+                                if search_fields_type[j] == "String":
+                                    newValue.append("")
+                                elif search_fields_type[j] in ["Double", "Integer", "Single", "SmallInteger"]:
+                                    newValue.append(0)
+                                else:
+                                    newValue.append(value)
+                            else:
+                                newValue.append(value)
+                    # GDB は NULL 値を格納可能
                     else:
-                        newValue.append(value)
-            # GDB は NULL 値を格納可能
-            else:
-                newValue = list(inrow)
+                        newValue = list(inrow)
 
-            # パートの数
-            for part in inrow[-1]:
-                # マルチラインに対してそれぞれ中間点を取るためにパートからラインを生成する（パートを考慮する必要がなければ inrow[-1] に対して中間点を取ればよい)
-                multiLine = arcpy.Polyline(
-                            arcpy.Array([coords for coords in part]))
-                # ジオメトリにラインの中間点ポイントを格納
-                newValue[-1] = multiLine.positionAlongLine(0.5,True)
-                # リストからタプルに変換してインサート
-                outcur.insertRow(tuple(newValue))
-        # 後始末
-        del outcur
-        del incur
+                    # パートの数
+                    for part in inrow[-1]:
+                        # マルチラインに対してそれぞれ中間点を取るためにパートからラインを生成する（パートを考慮する必要がなければ inrow[-1] に対して中間点を取ればよい)
+                        multiLine = arcpy.Polyline(
+                                    arcpy.Array([coords for coords in part]),spref) # 2021.03.19: Poline 作成時の空間参照を指定に変更
+                        #            arcpy.Array([coords for coords in part]))
+                        # ジオメトリにラインの中間点ポイントを格納
+                        newValue[-1] = multiLine.positionAlongLine(0.5,True)
+                        # リストからタプルに変換してインサート
+                        outcur.insertRow(tuple(newValue))
+
+#        # 2021.03.19: with に変更したので不要
+#        del outcur
+#        del incur
 
         arcpy.AddMessage(u"処理終了：")
     except AlreadyExistError:
