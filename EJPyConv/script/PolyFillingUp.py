@@ -4,7 +4,7 @@ Tool name : ポリゴンを穴埋め
 Source    : PolyFillingUp.py
 Author    : Esri Japan Corporation
 Created   : 2019/6/21
-Updated   :
+Updated   : 2022/7/13
 """
 
 class AlreadyExistError(Exception):
@@ -40,6 +40,7 @@ def poly_filling_up(in_poly_fc, out_poly_fc):
         in_ws = os.path.dirname(in_poly_fc)
         out_fc_name = os.path.basename(out_poly_fc)
         out_ws = os.path.dirname(out_poly_fc)
+        spatial_ref = arcpy.Describe(in_poly_fc).spatialReference
 
         # 出力データの作成
         arcpy.CopyFeatures_management(in_poly_fc, out_poly_fc)
@@ -52,6 +53,7 @@ def poly_filling_up(in_poly_fc, out_poly_fc):
                 new_part = arcpy.Array()
                 # Nullになるポイント(interior ring の最初)を取得
                 null_point = 0
+                i = 0
                 for i in range(len(part)):
                     if part[i] == None:
                         null_point = i
@@ -61,11 +63,12 @@ def poly_filling_up(in_poly_fc, out_poly_fc):
                     polygon.add(part)
                 # 穴あきポリゴンの場合パートの数をinterior ringの一つ前のポイントまでに
                 else:
+                    j = 0
                     for j in range(null_point):
                         new_part.add(part[j])
                     polygon.add(new_part)
             if len(polygon) > 0:
-                new_poly = arcpy.Polygon(polygon)
+                new_poly = arcpy.Polygon(polygon, spatial_ref)
                 inrow[0] = new_poly
                 outcur.updateRow(inrow)
 

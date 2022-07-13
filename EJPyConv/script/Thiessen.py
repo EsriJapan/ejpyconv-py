@@ -4,7 +4,7 @@ Tool name : ティーセンポリゴンの作成
 Source    : Thiessen.py
 Author    : Esri Japan Corporation
 Created   : 2019/12/26
-Updated   :
+Updated   : 2022/5/20
 """
 
 import sys
@@ -42,8 +42,7 @@ def check():
     if count > LIMIT:
         raise FeatureCountError
 
-
-def create_voronoi(point_list, outcur, out):
+def create_voronoi(point_list, out):
     """
     概要　　　： ティーセンポリゴンを作成します。
     引数１    : point_list　入力ポイント（IN_PT_FC）の座標のリスト
@@ -73,25 +72,28 @@ def create_voronoi(point_list, outcur, out):
     # ティーセンポリゴンの頂点の組み合わせを抽出
     vor_verticies = [r for r in vor.regions if -1 not in r and r]
 
-    # 抽出した頂点の組み合わせから頂点の座標を取得してティーセンポリゴンを作成
-    for n, region in enumerate(vor_verticies, start=1):
-        arcpy.AddMessage("{0}/{1}の処理中・・・".format(n, count))
-        coordinates = [vor.vertices[region]]
-        coordinates_list = coordinates[0].tolist()
-        outcur.insertRow([coordinates_list])
+    with arcpy.da.InsertCursor(out, ["SHAPE@"]) as outcur:
+        # 抽出した頂点の組み合わせから頂点の座標を取得してティーセンポリゴンを作成
+        for n, region in enumerate(vor_verticies, start=1):
+            arcpy.AddMessage("{0}/{1}の処理中・・・".format(n, count))
+            coordinates = [vor.vertices[region]]
+            coordinates_list = coordinates[0].tolist()
+            arcpy.AddMessage(coordinates_list)
+            outcur.insertRow([coordinates_list])
 
     # 作成したボロノイ図を整えるためのクリップする範囲を計算
     Xmin = min(x) - (deltaX / 10)
     Ymin = min(y) - (deltaY / 10)
     Xmax = max(x) + (deltaX / 10)
     Ymax = max(y) + (deltaY / 10)
+
         
     # クリップフィーチャの作成
     array = arcpy.Array([arcpy.Point(Xmax, Ymax), 
                          arcpy.Point(Xmax, Ymin), 
                          arcpy.Point(Xmin, Ymin), 
                          arcpy.Point(Xmin, Ymax)])
-    clip_poly = arcpy.Polygon(array, arcpy.Describe(IN_PT_FC).spatialReference)
+    clip_poly = arcpy.Polygon(array, spatial_reference=arcpy.Describe(IN_PT_FC).spatialReference)
        
     # クリップしフィーチャクラスを出力
     arcpy.Clip_analysis(out, clip_poly, OUT_POLY_FC)
@@ -115,19 +117,16 @@ def thiessen():
         point_list = []
 
         # 入力ポイントのXYをリストに格納
-        with arcpy.da.InsertCursor(out, ["SHAPE@"]) as outcur:
-            with arcpy.da.SearchCursor(IN_PT_FC, ["SHAPE@"]) as incur:
-                for inrow in incur:   
-                    point_list.append((inrow[0].centroid.X, inrow[0].centroid.Y))
+        with arcpy.da.SearchCursor(IN_PT_FC, ["SHAPE@"]) as incur:
+            for inrow in incur:   
+                point_list.append((inrow[0].centroid.X, inrow[0].centroid.Y))
 
-                #入力ポイント数が2件以上のときcreate_voronoiメソッドでティーセンポリゴンの作成、2件以下のときは処理を終了する
-                if count >= 2:
-                    create_voronoi(point_list, outcur, out)
-                    arcpy.AddMessage("処理終了：")
-                else:
-                    arcpy.AddMessage("作成されるティーセンポリゴンは0件のため処理を終了します。")
-
-      
+            #入力ポイント数が2件以上のときcreate_voronoiメソッドでティーセンポリゴンの作成、2件以下のときは処理を終了する
+            if count >= 2:
+                create_voronoi(point_list, out)
+                arcpy.AddMessage("処理終了：")
+            else:
+                arcpy.AddMessage("作成されるティーセンポリゴンは0件のため処理を終了します。")
     except AlreadyExistError:
         arcpy.AddError("{0}はすでに存在しています".format(OUT_POLY_FC))
     except FeatureCountError:
