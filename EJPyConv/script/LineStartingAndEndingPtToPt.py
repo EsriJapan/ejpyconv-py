@@ -4,7 +4,7 @@ Tool name : ラインの始終点をポイントへ変換
 Source    : LineStartingAndEndingPtToPt.py
 Author    : Esri Japan Corporation
 Created   : 2018/12/14
-Updated   :
+Updated   : 2024/08/20
 """
 
 class AlreadyExistError(Exception):
@@ -94,6 +94,7 @@ def lineendpoint_point():
 
         in_line_fc = arcpy.GetParameterAsText(0)
         out_pt_fc = arcpy.GetParameterAsText(1)
+        out_type = arcpy.GetParameterAsText(2)
 
         # ワークスペース
         wstype = arcpy.Describe(os.path.dirname(out_pt_fc)).workspacetype
@@ -140,14 +141,16 @@ def lineendpoint_point():
 
             # パートの数
             for part in inrow[-1]:
-                # ジオメトリにラインの始点ポイントを格納
-                newValue[-1] = arcpy.PointGeometry(part[0], spref)
-                # リストからタプルに変換してインサート
-                outcur.insertRow(tuple(newValue))
-                # ジオメトリにラインの終点ポイントを格納
-                newValue[-1] = arcpy.PointGeometry(part[part.count - 1], spref)
-                # リストからタプルに変換してインサート
-                outcur.insertRow(tuple(newValue))
+                if out_type == 'BOTH' or out_type == 'START':
+                    # ジオメトリにラインの始点ポイントを格納
+                    newValue[-1] = arcpy.PointGeometry(part[0], spref)
+                    # リストからタプルに変換してインサート
+                    outcur.insertRow(tuple(newValue))
+                if out_type == 'BOTH' or out_type == 'END':
+                    # ジオメトリにラインの終点ポイントを格納
+                    newValue[-1] = arcpy.PointGeometry(part[part.count - 1], spref)
+                    # リストからタプルに変換してインサート
+                    outcur.insertRow(tuple(newValue))
         # 後始末
         del outcur
         del incur
