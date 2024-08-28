@@ -30,7 +30,7 @@
 ## 動作確認環境
 
   ジオプロセシング ツールの動作確認を行った環境は、次の通りです。
-  * [ArcGIS Pro 2.4](https://www.esrij.com/products/arcgis-desktop/environments/arcgis-pro/)
+  * [ArcGIS Pro 3.3](https://pro.arcgis.com/ja/pro-app/3.3/get-started/arcgis-pro-system-requirements.htm)
 
 ## ArcGIS Pro への設定方法
 
