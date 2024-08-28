@@ -4,7 +4,7 @@ Tool name : ポリゴンをラインへ変換
 Source    : PolyToLine.py
 Author    : Esri Japan Corporation
 Created   : 2018/12/14
-Updated   :
+Updated   : 2024/08/20
 """
 
 class AlreadyExistError(Exception):
@@ -138,35 +138,10 @@ def polygon_line():
             else:
                 newValue = list(inrow)
 
-            # パートの数
-            for part in inrow[-1]:
-
-                j = 1
-
-                # 頂点座標の数
-                for pnt in part:
-                    if pnt:
-                        if (j % 2 == 0):
-                            end_pt = pnt
-                        else:
-                            start_pt = pnt
-                    else:
-                        del start_pt
-                        del end_pt
-                        j = 0
-
-                    if (j > 1):
-                        arr = []
-                        arr.append(start_pt)
-                        arr.append(end_pt)
-                        # ジオメトリにラインの始点ポイントを格納
-                        newValue[-1] = arcpy.Polyline(
-                            arcpy.Array([coords for coords in arr]))
-                        # リストからタプルに変換してインサート
-                        outcur.insertRow(tuple(newValue))
-                        del arr
-
-                    j += 1
+            # 元のポリゴンのboundaryを新しいラインフィーチャとしてセット
+            polygon = inrow[-1]
+            newValue[-1] = polygon.boundary()
+            outcur.insertRow(tuple(newValue))
 
         # 後始末
         del outcur
